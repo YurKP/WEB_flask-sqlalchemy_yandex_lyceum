@@ -1,6 +1,7 @@
 import datetime
 import sqlalchemy
 from sqlalchemy import orm
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from data import db_session
 
@@ -23,3 +24,9 @@ class User(db_session.SqlAlchemyBase):
                                      default=datetime.datetime.now)
 
     jobs = orm.relationship('Job', back_populates='user')
+
+    def set_password(self, password):
+        self.hashed_password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.hashed_password, password)
