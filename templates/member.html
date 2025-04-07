@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% set lst2 = lst|random %}
+
+<h3 align="center">{{ lst2|first|join(' ') }}</h3>
+
+<div style="text-align:center;">
+    <img src="{{ lst2[1] }}">
+</div>
+
+<h5 align="center">{{ lst2[2]|sort|join(', ') }}</h5>
+
+{% endblock %}
