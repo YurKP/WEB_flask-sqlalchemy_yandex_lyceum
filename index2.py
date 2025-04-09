@@ -6,9 +6,11 @@ from flask_wtf.file import FileRequired, FileField
 from data import db_session
 from data.users import User
 from data.jobs import Job
+from data.departments import Department
 from forms.user import RegisterForm
 from forms.login import LoginForm
 from forms.job import AddJobForm
+from forms.department import AddDepartmentForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 import json
 
@@ -29,6 +31,16 @@ def index():
     jobs = db_sess.query(Job).all()
 
     return render_template('index.html', title='Заготовка', jobs=jobs)
+
+
+@app.route('/departments')
+def show_departments():
+
+    db_session.global_init("db/mars_explorer.db")
+    db_sess = db_session.create_session()
+    departments = db_sess.query(Department).all()
+
+    return render_template('departments.html', title='Заготовка', departments=departments)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -141,7 +153,7 @@ def add_job():
 
 @app.route('/edit_job/<int:id>', methods=['GET', 'POST'])
 @login_required
-def edit_news(id):
+def edit_job(id):
     db_session.global_init("db/mars_explorer.db")
     form = AddJobForm()
 
@@ -163,9 +175,22 @@ def edit_news(id):
     if form.validate_on_submit():
         db_sess = db_session.create_session()
 
-        jobs = db_sess.query(Job).filter(Job.id == id).first()
+        jobs = db_sess.query(Job).filter(Job.id == id,
+                                         ((Job.team_leader == current_user.id) | (current_user.id == 1))).first()
+        ids = [i.id for i in db_sess.query(User).all()]
 
         if jobs:
+            if int(form.team_leader.data) not in ids:
+                return render_template('add_job.html', title='Adding a job',
+                                       form=form,
+                                       message="Такого team_leader'а нет")
+
+            for i in form.collaborators.data.split(', '):
+                if int(i) not in ids:
+                    return render_template('add_job.html', title='Adding a job',
+                                           form=form,
+                                           message="Таких collaborators'ов нет")
+
             jobs.job = form.job.data
             jobs.team_leader = form.team_leader.data
             jobs.work_size = form.work_size.data
@@ -182,7 +207,7 @@ def edit_news(id):
 
 @app.route('/delete_job/<int:id>', methods=['GET', 'POST'])
 @login_required
-def news_delete(id):
+def job_delete(id):
     db_sess = db_session.create_session()
     jobs = db_sess.query(Job).filter(Job.id == id,
                                      ((Job.team_leader == current_user.id) | (current_user.id == 1))).first()
@@ -193,6 +218,110 @@ def news_delete(id):
         abort(404)
 
     return redirect('/')
+
+
+@app.route('/add_department', methods=['GET', 'POST'])
+def add_department():
+    db_session.global_init("db/mars_explorer.db")
+    form = AddDepartmentForm()
+
+    if form.validate_on_submit():
+
+        db_sess = db_session.create_session()
+        ids = [i.id for i in db_sess.query(User).all()]
+
+        if int(form.chief.data) not in ids:
+            return render_template('add_departments.html', title='Adding a Department',
+                                   form=form,
+                                   message="Такого chief'а нет")
+
+        for i in form.members.data.split(', '):
+            if int(i) not in ids:
+                return render_template('add_departments.html', title='Adding a Department',
+                                       form=form,
+                                       message="Таких members'ов нет")
+
+        department = Department(
+            chief=form.chief.data,
+            title=form.title.data,
+            members=form.members.data,
+            email=form.email.data
+        )
+        db_sess.add(department)
+        db_sess.commit()
+        return redirect('/departments')
+
+    return render_template('add_departments.html',
+                           title='Adding a Department', form=form)
+
+
+@app.route('/edit_department/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_department(id):
+    db_session.global_init("db/mars_explorer.db")
+    form = AddDepartmentForm()
+
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+
+        departments = db_sess.query(Department).filter(Department.id == id,
+                                         ((Department.chief == current_user.id) | (current_user.id == 1))).first()
+
+        if departments:
+            form.title.data = departments.title
+            form.chief.data = departments.chief
+            form.members.data = departments.members
+            form.email.data = departments.email
+        else:
+            abort(404)
+
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        ids = [i.id for i in db_sess.query(User).all()]
+
+        departments = db_sess.query(Department).filter(Department.id == id,
+                                                       ((Department.chief == current_user.id) | (
+                                                                   current_user.id == 1))).first()
+
+        if departments:
+            if int(form.chief.data) not in ids:
+                return render_template('add_departments.html', title='Adding a Department',
+                                       form=form,
+                                       message="Такого chief'а нет")
+
+            for i in form.members.data.split(', '):
+                if int(i) not in ids:
+                    return render_template('add_departments.html', title='Adding a Department',
+                                           form=form,
+                                           message="Таких members'ов нет")
+
+            departments.title = form.title.data
+            departments.chief = form.chief.data
+            departments.members = form.members.data
+            departments.email = form.email.data
+
+            db_sess.commit()
+            return redirect('/departments')
+        else:
+            abort(404)
+
+    return render_template('add_departments.html', title='Редактирование департамента', form=form)
+
+
+@app.route('/delete_department/<int:id>', methods=['GET', 'POST'])
+@login_required
+def department_delete(id):
+    db_sess = db_session.create_session()
+    departments = db_sess.query(Department).filter(Department.id == id,
+                                                   ((Department.chief == current_user.id) | (
+                                                               current_user.id == 1))).first()
+    if departments:
+        db_sess.delete(departments)
+        db_sess.commit()
+    else:
+        abort(404)
+
+    return redirect('/departments')
 
 
 @app.route('/training/<prof>')
