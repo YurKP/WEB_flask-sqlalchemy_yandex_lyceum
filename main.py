@@ -2,6 +2,7 @@ from flask import Flask
 from data import db_session
 from data.users import User
 from data.jobs import Job
+from data.departments import Department
 from random import shuffle
 
 app = Flask(__name__)
@@ -56,6 +57,13 @@ def main():
     new_job.collaborators = '2, 3'
     new_job.is_finished = False
     db_sess.add(new_job)
+
+    new_department = Department()
+    new_department.title = 'Научный'
+    new_department.chief = 1
+    new_department.members = '2, 3'
+    new_department.email = 'science_mars@mars.org'
+    db_sess.add(new_department)
 
     db_sess.commit()
     # app.run()

@@ -1,17 +1,23 @@
 from flask import Flask, render_template
 from flask_wtf import FlaskForm
 from werkzeug.utils import redirect
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms import SubmitField
 from flask_wtf.file import FileRequired, FileField
 from data import db_session
 from data.users import User
 from data.jobs import Job
 from forms.user import RegisterForm
+from forms.login import LoginForm
+from forms.job import AddJobForm
+from flask_login import LoginManager, login_user, login_required, logout_user
 import json
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
 @app.route('/')
@@ -60,6 +66,79 @@ def reqister():
     return render_template('register_form.html', title='Регистрация', form=form)
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    db_session.global_init("db/mars_explorer.db")
+
+    db_sess = db_session.create_session()
+    return db_sess.query(User).get(user_id)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    db_session.global_init("db/mars_explorer.db")
+    form = LoginForm()
+
+    if form.validate_on_submit():
+
+        db_sess = db_session.create_session()
+
+        user = db_sess.query(User).filter(User.email == form.email.data).first()
+
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            return redirect("/")
+
+        return render_template('login.html',
+                               message="Неправильный логин или пароль",
+                               form=form, img='static/img/эмблема.png')
+
+    return render_template('login.html', title='Авторизация', form=form, img='static/img/эмблема.png')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect("/")
+
+
+@app.route('/add_job', methods=['GET', 'POST'])
+def add_job():
+    db_session.global_init("db/mars_explorer.db")
+    form = AddJobForm()
+
+    if form.validate_on_submit():
+
+        db_sess = db_session.create_session()
+        ids = [i.id for i in db_sess.query(User).all()]
+
+        if int(form.team_leader.data) not in ids:
+            return render_template('add_job.html', title='Adding a job',
+                                   form=form,
+                                   message="Такого team_leader'а нет")
+
+        for i in form.collaborators.data.split(', '):
+            if int(i) not in ids:
+                return render_template('add_job.html', title='Adding a job',
+                                       form=form,
+                                       message="Таких collaborators'ов нет")
+
+        job = Job(
+            team_leader=form.team_leader.data,
+            job=form.title.data,
+            work_size=form.work_size.data,
+            collaborators=form.collaborators.data,
+            is_finished=form.is_finished.data
+        )
+        db_sess.add(job)
+        db_sess.commit()
+        return redirect('/')
+
+    return render_template('add_job.html',
+                           title='Adding a job', form=form)
+
+
 @app.route('/training/<prof>')
 def professions(prof):
     return render_template('training.html', title='Заготовка', profession=prof)
@@ -83,24 +162,6 @@ def questionnaire_answer():
                              'motivation': 'Всегда мечтал ...', 'ready': 'True'}
 
     return render_template('auto_answer.html', title='Анкета', data=dict_with_information)
-
-
-class LoginForm(FlaskForm):
-    id_astronaut = StringField('Id астронавта', validators=[DataRequired()])
-    astronaut_password = PasswordField('Пароль астронавта', validators=[DataRequired()])
-
-    id_captain = StringField('Id капитана', validators=[DataRequired()])
-    captain_password = PasswordField('Пароль капитана', validators=[DataRequired()])
-
-    submit = SubmitField('Доступ')
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        return redirect('/success')
-    return render_template('login.html', title='Авторизация', form=form, img='static/img/эмблема.png')
 
 
 @app.route('/success')

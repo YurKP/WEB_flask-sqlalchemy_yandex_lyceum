@@ -2,11 +2,12 @@ import datetime
 import sqlalchemy
 from sqlalchemy import orm
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 from data import db_session
 
 
-class User(db_session.SqlAlchemyBase):
+class User(db_session.SqlAlchemyBase, UserMixin):
     __tablename__ = 'users'
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
@@ -24,6 +25,7 @@ class User(db_session.SqlAlchemyBase):
                                      default=datetime.datetime.now)
 
     jobs = orm.relationship('Job', back_populates='user')
+    departments = orm.relationship('Department', back_populates='user2')
 
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)
