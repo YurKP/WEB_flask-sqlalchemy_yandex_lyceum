@@ -3,6 +3,7 @@ from data import db_session
 from data.users import User
 from data.jobs import Job
 from data.departments import Department
+from data.category import Category
 from random import shuffle
 
 app = Flask(__name__)
@@ -50,13 +51,14 @@ def main():
         count_1 += 1
         count_2 += 1
 
-    new_job = Job()
-    new_job.team_leader = 1
-    new_job.job = 'deployment of residential modules 1 and 2'
-    new_job.work_size = 15
-    new_job.collaborators = '2, 3'
-    new_job.is_finished = False
-    db_sess.add(new_job)
+    for j in ['deployment of residential modules 1 and 2', 'cook']:
+        new_job = Job()
+        new_job.team_leader = 1
+        new_job.job = j
+        new_job.work_size = 15
+        new_job.collaborators = '2, 3'
+        new_job.is_finished = False
+        db_sess.add(new_job)
 
     new_department = Department()
     new_department.title = 'Научный'
@@ -64,6 +66,12 @@ def main():
     new_department.members = '2, 3'
     new_department.email = 'science_mars@mars.org'
     db_sess.add(new_department)
+
+    category = Category()
+    category.name = 'какая-то категория'
+    db_sess.add(category)
+
+    new_job.categories.append(category)
 
     db_sess.commit()
     # app.run()

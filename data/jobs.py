@@ -5,6 +5,16 @@ import datetime
 from data import db_session
 
 
+association_table = sqlalchemy.Table(
+    'association',
+    db_session.SqlAlchemyBase.metadata,
+    sqlalchemy.Column('jobs', sqlalchemy.Integer,
+                      sqlalchemy.ForeignKey('jobs.id')),
+    sqlalchemy.Column('category', sqlalchemy.Integer,
+                      sqlalchemy.ForeignKey('category.id'))
+)
+
+
 class Job(db_session.SqlAlchemyBase):
     __tablename__ = 'jobs'
 
@@ -18,3 +28,6 @@ class Job(db_session.SqlAlchemyBase):
     is_finished = sqlalchemy.Column(sqlalchemy.Boolean, nullable=True)
 
     user = orm.relationship('User')
+    categories = orm.relationship("Category",
+                                  secondary="association",
+                                  backref="jobs")
