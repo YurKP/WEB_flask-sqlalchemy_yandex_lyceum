@@ -9,9 +9,9 @@
         {{ form.hidden_tag() }}
 
         <p>
-            {{ form.title.label }}<br>
-            {{ form.title(class="form-control") }}<br>
-            {% for error in form.title.errors %}
+            {{ form.job.label }}<br>
+            {{ form.job(class="form-control") }}<br>
+            {% for error in form.job.errors %}
                 <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>
