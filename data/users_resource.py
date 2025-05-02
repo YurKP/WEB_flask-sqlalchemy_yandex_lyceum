@@ -1,17 +1,9 @@
-from flask_restful import reqparse, abort, Resource
+from flask_restful import abort, Resource
 from flask import jsonify
 
 from data import db_session
 from data.users import User
-
-parser = reqparse.RequestParser()
-parser.add_argument('name', required=True)
-parser.add_argument('surname', required=True)
-parser.add_argument('age', required=True, type=int)
-parser.add_argument('position', required=True)
-parser.add_argument('speciality', required=True)
-parser.add_argument('address', required=True)
-parser.add_argument('email', required=True)
+from data.parser_users import parser
 
 
 def abort_if_users_not_found(user_id):

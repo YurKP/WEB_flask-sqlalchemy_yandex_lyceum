@@ -1,15 +1,9 @@
-from flask_restful import reqparse, abort, Resource
+from flask_restful import abort, Resource
 from flask import jsonify
 
 from data import db_session
 from data.jobs import Job
-
-parser = reqparse.RequestParser()
-parser.add_argument('team_leader', required=True, type=int)
-parser.add_argument('job', required=True)
-parser.add_argument('work_size', required=True, type=int)
-parser.add_argument('collaborators', required=True)
-parser.add_argument('is_finished', required=True, type=int)
+from data.parser_jobs import parser
 
 
 def abort_if_jobs_not_found(job_id):
