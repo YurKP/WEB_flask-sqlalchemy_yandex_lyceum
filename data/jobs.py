@@ -3,6 +3,7 @@ from sqlalchemy import orm
 import datetime
 
 from data import db_session
+from sqlalchemy_serializer import SerializerMixin
 
 
 association_table = sqlalchemy.Table(
@@ -15,7 +16,7 @@ association_table = sqlalchemy.Table(
 )
 
 
-class Job(db_session.SqlAlchemyBase):
+class Job(db_session.SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'jobs'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)

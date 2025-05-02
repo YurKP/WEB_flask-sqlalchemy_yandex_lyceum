@@ -13,9 +13,13 @@ from forms.job import AddJobForm
 from forms.department import AddDepartmentForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 import json
+from data import users_resource
+from data import jobs_resource
+from flask_restful import Api
 
 
 app = Flask(__name__)
+api = Api(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 
 login_manager = LoginManager()
@@ -25,8 +29,6 @@ login_manager.init_app(app)
 @app.route('/')
 @app.route('/index')
 def index():
-
-    db_session.global_init("db/mars_explorer.db")
     db_sess = db_session.create_session()
     jobs = db_sess.query(Job).all()
 
@@ -35,8 +37,6 @@ def index():
 
 @app.route('/departments')
 def show_departments():
-
-    db_session.global_init("db/mars_explorer.db")
     db_sess = db_session.create_session()
     departments = db_sess.query(Department).all()
 
@@ -45,7 +45,6 @@ def show_departments():
 
 @app.route('/register', methods=['GET', 'POST'])
 def reqister():
-    db_session.global_init("db/mars_explorer.db")
     form = RegisterForm()
 
     if form.validate_on_submit():
@@ -80,15 +79,12 @@ def reqister():
 
 @login_manager.user_loader
 def load_user(user_id):
-    db_session.global_init("db/mars_explorer.db")
-
     db_sess = db_session.create_session()
     return db_sess.query(User).get(user_id)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    db_session.global_init("db/mars_explorer.db")
     form = LoginForm()
 
     if form.validate_on_submit():
@@ -117,7 +113,6 @@ def logout():
 
 @app.route('/add_job', methods=['GET', 'POST'])
 def add_job():
-    db_session.global_init("db/mars_explorer.db")
     form = AddJobForm()
 
     if form.validate_on_submit():
@@ -154,7 +149,6 @@ def add_job():
 @app.route('/edit_job/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_job(id):
-    db_session.global_init("db/mars_explorer.db")
     form = AddJobForm()
 
     if request.method == "GET":
@@ -222,7 +216,6 @@ def job_delete(id):
 
 @app.route('/add_department', methods=['GET', 'POST'])
 def add_department():
-    db_session.global_init("db/mars_explorer.db")
     form = AddDepartmentForm()
 
     if form.validate_on_submit():
@@ -258,7 +251,6 @@ def add_department():
 @app.route('/edit_department/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_department(id):
-    db_session.global_init("db/mars_explorer.db")
     form = AddDepartmentForm()
 
     if request.method == "GET":
@@ -409,4 +401,12 @@ def member():
 
 
 if __name__ == '__main__':
+    db_session.global_init("db/mars_explorer.db")
+    
+    api.add_resource(users_resource.UsersListResource, '/api/v2/users')
+    api.add_resource(users_resource.UsersResource, '/api/v2/users/<int:user_id>')
+
+    api.add_resource(jobs_resource.JobsListResource, '/api/v2/jobs')
+    api.add_resource(jobs_resource.JobsResource, '/api/v2/jobs/<int:job_id>')
+
     app.run(port=8080, host='127.0.0.1')
